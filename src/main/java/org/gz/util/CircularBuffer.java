@@ -6,10 +6,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import static java.lang.Math.min;
+
 
 public class CircularBuffer<T> {
 
     private final AtomicLong index = new AtomicLong(0);
+    private final AtomicLong count = new AtomicLong(0);
     private final AtomicReferenceArray<T> buffer;
     private final int size;
 
@@ -26,30 +29,25 @@ public class CircularBuffer<T> {
     public void add(T item) {
         assert item != null : "Item must be non-null";
         buffer.set((int) (index.getAndIncrement() % size), item);
+        count.getAndIncrement();
     }
 
-    public T get(long i) {
-        return buffer.get((int) (i % size));
-    }
-
-    public T take(AtomicLong idx) {
-        if (idx.get() >= index.get())
-            return null;
-        if (index.get() - idx.get() > size) {
-            idx.lazySet(index.get());
-            throw new BufferOverflowException();
+    // called by one thread
+    public List<T> drain() {
+        int _count = (int) min(count.get(), size);
+        List<T> result = new ArrayList<T>(_count);
+        int idx = -1;
+        if (_count == size) {
+            idx = (int) index.get();
         }
-        return get(idx.getAndIncrement());
-    }
-
-    public List<T> drain(AtomicLong idx) {
-        if (index.get() - idx.get() > size) {
-            idx.set(index.get());
-            throw new BufferOverflowException();
+        for(int i = 0; i < _count; i ++) {
+            idx++;
+            if (idx == size) idx = 0;
+            result.add(buffer.get(idx));
+            buffer.set(idx, null);
         }
-        List<T> result = new ArrayList<T>((int) (index.get()-idx.get()));
-        while (idx.get() < index.get())
-            result.add(get(idx.getAndIncrement()));
+        count.set(0);
+        index.set(0);
         return result;
     }
 

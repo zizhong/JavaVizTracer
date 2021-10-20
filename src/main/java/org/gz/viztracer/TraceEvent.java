@@ -1,6 +1,6 @@
 package org.gz.viztracer;
 
-public class TraceEvent {
+class TraceEvent {
     private long processId = 0;
     private long threadId = 0;
     private long timestamp = 0;
@@ -14,6 +14,10 @@ public class TraceEvent {
         method = name;
         duration = dur;
         threadName = Thread.currentThread().getName();
+    }
+
+    public long sortByTimeStamp() {
+        return timestamp;
     }
 
     @Override
