@@ -1,8 +1,13 @@
 package org.gz.viztracer;
 
+import org.gz.util.CircularBuffer;
+
 public class VizTracer {
     private static VizTracer INSTANCE;
-    private VizTracer() {}
+    private CircularBuffer<TraceEvent> cb;
+    private VizTracer() {
+        cb = new CircularBuffer<>(10000);
+    }
     public static synchronized VizTracer getInstance() {
         if (INSTANCE == null) {
             INSTANCE = new VizTracer();
@@ -10,6 +15,6 @@ public class VizTracer {
         return INSTANCE;
     }
     public void addEvent(TraceEvent e) {
-        System.out.println(e);
+        cb.add(e);
     }
 }
