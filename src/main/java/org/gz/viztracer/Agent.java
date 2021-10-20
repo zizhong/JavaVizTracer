@@ -93,6 +93,7 @@ public class Agent implements ClassFileTransformer {
                 "        _gz_viz_tracer_sb.append(':');\n" +
                 "        _gz_viz_tracer_sb.append(_gz_viz_tracer_method.getName());\n" +
                 "        long dur = System.currentTimeMillis() - _gz_viz_tracer_ts;\n" +
-                "        VizTracer.getInstance().addEvent(new TraceEvent(_gz_viz_tracer_ts, dur, _gz_viz_tracer_sb.toString()));");
+                "        org.gz.viztracer.VizTracer.getInstance().addEvent(\n" +
+                "        new org.gz.viztracer.TraceEvent(_gz_viz_tracer_ts, dur, _gz_viz_tracer_sb.toString()));");
     }
 }
