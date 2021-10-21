@@ -1,10 +1,124 @@
 package org.gz.viztracer;
 
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 
+import java.util.*;
+
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+class Meta {
+    private final String version;
+
+    Meta(String ver) {
+        version = ver;
+    }
+}
+
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+class TraceEventMetaJson {
+    /*
+    *    {
+		"ph": "M",
+		"pid": 32511,
+		"tid": 32511,
+		"name": "process_name",
+		"args": {
+			"name": "MainProcess"
+		}
+	}*/
+    String ph = "M";
+    private final long pid;
+    private final long tid;
+    private final String name;
+    private final Map<String, String> args;
+
+    TraceEventMetaJson(TraceEvent e, boolean isProcess) {
+        pid = e.processId;
+        tid = e.threadId;
+        if (isProcess) {
+            name = "process_name";
+            args = new HashMap<>();
+            args.put("name", "MainProcess");
+        } else {
+            name = "thread_name";
+            args = new HashMap<>();
+            args.put("name", e.threadName);
+        }
+    }
+}
+
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+class TraceEventJSON {
+    String ph = "X";
+    String cat = "FEE";
+    /*
+    {
+    	"pid": 15845,
+		"tid": 15845,
+		"ts": 14606479869.789,
+		"dur": 1576.5,
+		"name": "heap_sort (example/src/different_sorts.py:93)",
+		"ph": "X",
+		"cat": "FEE"
+		}
+    * */
+    private final long pid;
+    private final long tid;
+    private final double ts;
+    private final double dur;
+    private final String name;
+
+    TraceEventJSON(TraceEvent e) {
+        pid = e.processId;
+        tid = e.threadId;
+        ts = e.timestamp;
+        dur = e.duration;
+        name = e.method;
+    }
+}
+
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 class TraceJSON {
-    public List<TraceEventJSON> traceEvent;
-
+    public Meta viztracer_metadata = new Meta("0.12.3");
     public String displayTimeUnit = "ms";
+    /*
+    {"traceEvents": [],
+	"viztracer_metadata": {
+		"version": "0.12.3"
+	},
+	"displayTimeUnit": "ms",
+	"file_info": {
+		"files": {},
+		"functions": {}
+	}
+    }
+    * */
+    private final List<Object> traceEvents;
+    private final Map<String, Map<String, String>> file_info;
 
+    TraceJSON(List<TraceEvent> events) {
+        // TODO test if unsorted data can cause difference.
+        events.sort(Comparator.comparingLong(TraceEvent::sortByTimeStamp));
+
+
+        Set<Long> pids = new HashSet<>();
+        Set<Long> tids = new HashSet<>();
+        traceEvents = new ArrayList<>();
+        Long key = 0L;
+        for (TraceEvent e : events) {
+            key = e.processId;
+            if (pids.contains(key)) {
+                pids.add(key);
+                traceEvents.add(new TraceEventMetaJson(e, true));
+            }
+            key = e.threadId;
+            if (tids.contains(key)) {
+                tids.add(key);
+                traceEvents.add(new TraceEventMetaJson(e, false));
+            }
+        }
+        for (TraceEvent e : events) traceEvents.add(new TraceEventJSON(e));
+        file_info = new HashMap<>();
+        file_info.put("files", new HashMap<>());
+        file_info.put("functions", new HashMap<>());
+    }
 }

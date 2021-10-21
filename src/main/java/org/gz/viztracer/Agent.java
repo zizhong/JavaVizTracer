@@ -2,6 +2,7 @@ package org.gz.viztracer;
 
 import javassist.*;
 
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 
@@ -11,36 +12,37 @@ public class Agent implements ClassFileTransformer {
     /**
      * classes to always not to instrument
      */
-    static final String[] DEFAULT_EXCLUDES = new String[]{"com/sun/", "sun/", "java/", "javax/", "org/slf4j"};
+    private static final String[] DEFAULT_EXCLUDES = new String[]{"com/sun/", "sun/", "java/", "javax/", "org/slf4j"};
 
     /**
      * only this classes should instrument or leave empty to instrument all classes that not excluded
      */
-    static final String[] INCLUDES = new String[]{
+    private static final String[] INCLUDES = new String[]{
             // "org/bouncycastle/crypto/encodings/", "org/bouncycastle/jce/provider/JCERSACipher"
     };
 
-    public static void premain(final String agentArgument, final Instrumentation instrumentation) {
+    public static void premain(String agentArgument, Instrumentation instrumentation) {
+        try {
+            new TraceServer();
+        } catch (IOException e) {
+            System.out.println("Cannot start TraceServer() " + e.getCause());
+            return;
+        }
         instrumentation.addTransformer(new Agent());
     }
 
     /**
      * instrument class
      */
-    public byte[] transform(final ClassLoader loader, final String className, final Class clazz,
-                            final java.security.ProtectionDomain domain, final byte[] bytes) {
+    @Override
+    public byte[] transform(ClassLoader loader, String className, Class clazz,
+                            java.security.ProtectionDomain domain, byte[] bytes) {
 
-        for (int i = 0; i < DEFAULT_EXCLUDES.length; i++) {
-            if (className.startsWith(DEFAULT_EXCLUDES[i])) {
-                return bytes;
-            }
-        }
+        for (int i = 0; i < Agent.DEFAULT_EXCLUDES.length; i++)
+            if (className.startsWith(Agent.DEFAULT_EXCLUDES[i])) return bytes;
 
-        for (String include : INCLUDES) {
-            if (className.startsWith(include)) {
-                return doClass(className, clazz, bytes);
-            }
-        }
+        for (String include : Agent.INCLUDES)
+            if (className.startsWith(include)) return doClass(className, clazz, bytes);
 
 
         return doClass(className, clazz, bytes);
@@ -49,7 +51,7 @@ public class Agent implements ClassFileTransformer {
     /**
      * instrument class with javasisst
      */
-    private byte[] doClass(final String name, final Class clazz, byte[] b) {
+    private byte[] doClass(String name, Class clazz, byte[] b) {
         ClassPool pool = ClassPool.getDefault();
         CtClass cl = null;
 
@@ -60,12 +62,7 @@ public class Agent implements ClassFileTransformer {
 
                 CtBehavior[] methods = cl.getDeclaredBehaviors();
 
-                for (int i = 0; i < methods.length; i++) {
-
-                    if (methods[i].isEmpty() == false) {
-                        doMethod(methods[i]);
-                    }
-                }
+                for (int i = 0; i < methods.length; i++) if (methods[i].isEmpty() == false) doMethod(methods[i]);
 
                 b = cl.toBytecode();
             }
@@ -73,9 +70,7 @@ public class Agent implements ClassFileTransformer {
             System.err.println("Could not instrument  " + name + ",  exception : " + e.getMessage());
         } finally {
 
-            if (cl != null) {
-                cl.detach();
-            }
+            if (cl != null) cl.detach();
         }
 
         return b;
@@ -85,7 +80,7 @@ public class Agent implements ClassFileTransformer {
      * modify code and add log statements before the original method is called
      * and after the original method was called
      */
-    private void doMethod(final CtBehavior method) throws NotFoundException, CannotCompileException {
+    private void doMethod(CtBehavior method) throws NotFoundException, CannotCompileException {
         method.insertBefore("long _gz_viz_tracer_ts = System.currentTimeMillis();");
         method.insertAfter("Method _gz_viz_tracer_method = new Object(){}.getClass().getEnclosingMethod();\n" +
                 "        StringBuilder _gz_viz_tracer_sb = new StringBuilder(128);\n" +

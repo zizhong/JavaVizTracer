@@ -1,18 +1,16 @@
 package org.gz.viztracer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gz.util.CircularBuffer;
 
-import java.util.Comparator;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-public class VizTracer {
+import java.util.logging.Logger;
+
+class VizTracer {
+    private static final Logger log = Logger.getLogger(VizTracer.class.getName());
     private static VizTracer INSTANCE;
     private final CircularBuffer<TraceEvent> cb;
 
@@ -22,60 +20,65 @@ public class VizTracer {
     private boolean waitForEnable;
 
     private VizTracer() {
-        cb = new CircularBuffer<>(10000);
+        cb = new CircularBuffer<>(1000000);
         enabled = false;
         saveInProgress = false;
         waitForEnable = false;
     }
 
-    public static synchronized VizTracer getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new VizTracer();
-        }
-        return INSTANCE;
+    static synchronized VizTracer getInstance() {
+        if (VizTracer.INSTANCE == null) VizTracer.INSTANCE = new VizTracer();
+        return VizTracer.INSTANCE;
     }
 
-    public void addEvent(TraceEvent e) {
-        if (enabled) {
-            cb.add(e);
-        }
+    boolean isEnabled() {
+        return enabled;
     }
 
-    public void enable() {
-        if (saveInProgress) {
-            waitForEnable = true;
-        } else {
+    void addEvent(TraceEvent e) {
+        if (enabled) cb.add(e);
+    }
+
+    void enable() {
+        if (saveInProgress) waitForEnable = true;
+        else {
             enabled = true;
+            System.out.println("Trace enabled");
         }
     }
 
-    public void disable() {
+    void disable() {
         if (enabled) {
             saveInProgress = true;
             enabled = false;
+            System.out.println("Trace disabled");
             CompletableFuture.supplyAsync(() -> {
-                boolean save;
                 try {
-                    save = save();
-                } catch (JsonProcessingException e) {
-                    save = false;
-                    e.printStackTrace();
+                    return save();
+                } catch (IOException e) {
+                    VizTracer.log.info("save exception {}" + e.toString());
                 }
-                return save;
+                return false;
             }).thenAccept(r -> {
-                if (waitForEnable) enabled = true;
-            });
+                if (waitForEnable) {
+                    enabled = true;
+                    System.out.println("Trace enabled");
+                }
+            }).exceptionally(e -> {
+                VizTracer.log.info("supplyAsync exception {}" + e.toString());
+                e.printStackTrace();
+                return null;
+            }).join();
         }
 
     }
 
-    public boolean save() throws JsonProcessingException {
+    private boolean save() throws IOException {
         ObjectMapper jacksonMapper = new ObjectMapper();
-        long threadId = Thread.currentThread().getId();
-        AtomicLong idx = cb.index();
         List<TraceEvent> l = cb.drain();
-        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-        String jsonStr = ow.writeValueAsString(l);
+        //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        //String jsonStr = ow.writeValueAsString(new TraceJSON(l));
+        jacksonMapper.writeValue(new File("C:\\Users\\grain\\workspaces\\JavaVizTracer\\output\\out.json"), new TraceJSON(l));
         return true;
     }
 
