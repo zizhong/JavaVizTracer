@@ -24,6 +24,9 @@ public class VizTracer {
         enabled = true;
         saveInProgress = false;
         waitForEnable = false;
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            disable();
+        }));
     }
 
     public static synchronized VizTracer getInstance() {
