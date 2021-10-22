@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
-class VizTracer {
+public class VizTracer {
     private static final Logger log = Logger.getLogger(VizTracer.class.getName());
     private static VizTracer INSTANCE;
     private final CircularBuffer<TraceEvent> cb;
@@ -21,33 +21,39 @@ class VizTracer {
 
     private VizTracer() {
         cb = new CircularBuffer<>(1000000);
-        enabled = false;
+        enabled = true;
         saveInProgress = false;
         waitForEnable = false;
     }
 
-    static synchronized VizTracer getInstance() {
-        if (VizTracer.INSTANCE == null) VizTracer.INSTANCE = new VizTracer();
+    public static synchronized VizTracer getInstance() {
+        if (VizTracer.INSTANCE == null) {
+            VizTracer.INSTANCE = new VizTracer();
+        }
         return VizTracer.INSTANCE;
     }
 
-    boolean isEnabled() {
+    public boolean isEnabled() {
         return enabled;
     }
 
-    void addEvent(TraceEvent e) {
-        if (enabled) cb.add(e);
+    public void addEvent(TraceEvent e) {
+        if (enabled) {
+            cb.add(e);
+            System.out.println("AddEvent" + e);
+        }
     }
 
-    void enable() {
-        if (saveInProgress) waitForEnable = true;
-        else {
+    public void enable() {
+        if (saveInProgress) {
+            waitForEnable = true;
+        } else {
             enabled = true;
             System.out.println("Trace enabled");
         }
     }
 
-    void disable() {
+    public void disable() {
         if (enabled) {
             saveInProgress = true;
             enabled = false;
@@ -69,11 +75,12 @@ class VizTracer {
                 e.printStackTrace();
                 return null;
             }).join();
+            saveInProgress = false;
         }
 
     }
 
-    private boolean save() throws IOException {
+    public boolean save() throws IOException {
         ObjectMapper jacksonMapper = new ObjectMapper();
         List<TraceEvent> l = cb.drain();
         //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();

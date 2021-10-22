@@ -1,0 +1,1 @@
+Premain-Class: org.gz.viztracer.Agent

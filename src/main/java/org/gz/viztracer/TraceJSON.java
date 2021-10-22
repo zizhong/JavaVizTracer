@@ -15,6 +15,10 @@ class Meta {
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 class TraceEventMetaJson {
+    private final long pid;
+    private final long tid;
+    private final String name;
+    private final Map<String, String> args;
     /*
     *    {
 		"ph": "M",
@@ -26,10 +30,6 @@ class TraceEventMetaJson {
 		}
 	}*/
     String ph = "M";
-    private final long pid;
-    private final long tid;
-    private final String name;
-    private final Map<String, String> args;
 
     TraceEventMetaJson(TraceEvent e, boolean isProcess) {
         pid = e.processId;
@@ -48,8 +48,6 @@ class TraceEventMetaJson {
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 class TraceEventJSON {
-    String ph = "X";
-    String cat = "FEE";
     /*
     {
     	"pid": 15845,
@@ -66,6 +64,8 @@ class TraceEventJSON {
     private final double ts;
     private final double dur;
     private final String name;
+    String ph = "X";
+    String cat = "FEE";
 
     TraceEventJSON(TraceEvent e) {
         pid = e.processId;
@@ -78,8 +78,6 @@ class TraceEventJSON {
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 class TraceJSON {
-    public Meta viztracer_metadata = new Meta("0.12.3");
-    public String displayTimeUnit = "ms";
     /*
     {"traceEvents": [],
 	"viztracer_metadata": {
@@ -94,6 +92,8 @@ class TraceJSON {
     * */
     private final List<Object> traceEvents;
     private final Map<String, Map<String, String>> file_info;
+    public Meta viztracer_metadata = new Meta("0.12.3");
+    public String displayTimeUnit = "ms";
 
     TraceJSON(List<TraceEvent> events) {
         // TODO test if unsorted data can cause difference.
@@ -103,20 +103,19 @@ class TraceJSON {
         Set<Long> pids = new HashSet<>();
         Set<Long> tids = new HashSet<>();
         traceEvents = new ArrayList<>();
-        Long key = 0L;
         for (TraceEvent e : events) {
-            key = e.processId;
-            if (pids.contains(key)) {
-                pids.add(key);
+            if (!pids.contains(e.processId)) {
+                pids.add(e.processId);
                 traceEvents.add(new TraceEventMetaJson(e, true));
             }
-            key = e.threadId;
-            if (tids.contains(key)) {
-                tids.add(key);
+            if (!tids.contains(e.threadId)) {
+                tids.add(e.threadId);
                 traceEvents.add(new TraceEventMetaJson(e, false));
             }
         }
-        for (TraceEvent e : events) traceEvents.add(new TraceEventJSON(e));
+        for (TraceEvent e : events) {
+            traceEvents.add(new TraceEventJSON(e));
+        }
         file_info = new HashMap<>();
         file_info.put("files", new HashMap<>());
         file_info.put("functions", new HashMap<>());

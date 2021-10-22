@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 interface TraceClient {
     @GET("/trace")
@@ -56,14 +57,16 @@ public class AppTest {
 
         TraceClient client = retrofit.create(TraceClient.class);
 
-        assert !VizTracer.getInstance().isEnabled();
+        VizTracer.getInstance().disable();
         CompletableFuture<String> response = client.get("1");
         String query = response.get();
         assert query.contains("1");
+        TimeUnit.MILLISECONDS.sleep(10);
         assert VizTracer.getInstance().isEnabled();
         CompletableFuture<String> response2 = client.get("0");
         String query2 = response2.get();
         assert query2.contains("0");
+        TimeUnit.MILLISECONDS.sleep(10);
         assert !VizTracer.getInstance().isEnabled();
     }
 }

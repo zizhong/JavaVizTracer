@@ -3,7 +3,7 @@ package org.gz.viztracer;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-class TraceEvent {
+public class TraceEvent {
     long processId = 0;
     long threadId = 0;
     long timestamp = 0;
@@ -11,7 +11,7 @@ class TraceEvent {
     long duration = 0;
     String threadName;
 
-    TraceEvent(long ts, long dur, String name) {
+    public TraceEvent(long ts, long dur, String name) {
         processId = ProcessHandle.current().pid();
         threadId = Thread.currentThread().getId();
         timestamp = ts;
