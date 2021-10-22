@@ -43,7 +43,6 @@ public class VizTracer {
     public void addEvent(TraceEvent e) {
         if (enabled) {
             cb.add(e);
-            System.out.println("AddEvent" + e);
         }
     }
 

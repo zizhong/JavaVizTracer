@@ -116,6 +116,7 @@ class TraceJSON {
         for (TraceEvent e : events) {
             traceEvents.add(new TraceEventJSON(e));
         }
+        System.out.println("Tracing " + traceEvents.size() + " events");
         file_info = new HashMap<>();
         file_info.put("files", new HashMap<>());
         file_info.put("functions", new HashMap<>());

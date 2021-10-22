@@ -42,7 +42,6 @@ public class Agent implements ClassFileTransformer {
     @Override
     public byte[] transform(ClassLoader loader, String className, Class clazz,
                             java.security.ProtectionDomain domain, byte[] bytes) {
-        out.println("transform " + className);
         String classNameDir = className.replace('.', '/');
         for (int i = 0; i < Agent.DEFAULT_EXCLUDES.length; i++) {
             if (className.startsWith(Agent.DEFAULT_EXCLUDES[i]) || classNameDir.startsWith(Agent.DEFAULT_EXCLUDES[i])) {
@@ -64,7 +63,6 @@ public class Agent implements ClassFileTransformer {
      * instrument class with javasisst
      */
     private byte[] doClass(String name, Class clazz, byte[] b) {
-        out.println("doClass " + name);
 
         ClassPool pool = ClassPool.getDefault();
         CtClass cl = null;
@@ -102,7 +100,6 @@ public class Agent implements ClassFileTransformer {
      * and after the original method was called
      */
     private void doMethod(CtBehavior method) throws NotFoundException, CannotCompileException {
-        out.println("doMethod " + method.getName());
         String longMethodName = method.getDeclaringClass().getName() + "." + method.getName();
         method.addLocalVariable("_gz_viz_tracer_ts", CtClass.longType);
         method.insertBefore("_gz_viz_tracer_ts = System.currentTimeMillis();");
