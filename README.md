@@ -14,7 +14,7 @@ java -javaagent:<tracer.jar>  \
 org.gz.examples.AsyncExamples 
 ```
 2. vizviwer output.json
-![AsyncExample](https://github.com/zizhong/JavaVizTracer/blob/main/Examples/asyncExample.1.png?raw=true)
+![AsyncExample](https://github.com/zizhong/JavaVizTracer/blob/main/examples/asyncExample.1.png?raw=true)
 
 #### Profile a request for a long live application
 1. Add -javaagent and needed options to your java application command line.
