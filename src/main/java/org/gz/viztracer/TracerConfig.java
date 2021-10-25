@@ -13,7 +13,7 @@ class TracerConfig {
     private final static String DENY_CLASS_LIST = "org.gz.viztracer.denyClassList";
     private final static String TRACE_OUTPUT = "org.gz.viztracer.outputFile";
     private final static String MAX_TRACE_EVENTS = "org.gz.viztracer.maxTraceEvents";
-    private final static String MAX_DURATION_IN_MS = "org.gz.viztracer.minDurationInMs";
+    private final static String MAX_DURATION_IN_NANO = "org.gz.viztracer.minDurationInNano";
     private static final String[] defaultAllowClassList = new String[]{
             "org/gz/examples"
     };
@@ -28,7 +28,7 @@ class TracerConfig {
 
     public String outputFile = "result.json";
     public int maxTraceEvents = 1000000;
-    public long minDurationInMs = 0;
+    public long minDurationInNano = 0;
 
     public TracerConfig() {
         verbose = Boolean.parseBoolean(System.getProperty(VERBOSE, "false"));
@@ -54,7 +54,7 @@ class TracerConfig {
 
         maxTraceEvents = Integer.parseInt(System.getProperty(MAX_TRACE_EVENTS, "1000000"));
 
-        minDurationInMs = Long.parseLong(System.getProperty(MAX_DURATION_IN_MS, "0"));
+        minDurationInNano = Long.parseLong(System.getProperty(MAX_DURATION_IN_NANO, "0"));
 
         if (verbose) {
             System.err.println(VERBOSE + "=true");
@@ -63,7 +63,7 @@ class TracerConfig {
             System.err.println(DENY_CLASS_LIST + "=" + denyClassList);
             System.err.println(TRACE_OUTPUT + "=" + outputFile);
             System.err.println(MAX_TRACE_EVENTS + "=" + maxTraceEvents);
-            System.err.println(minDurationInMs + "=" + minDurationInMs);
+            System.err.println(MAX_DURATION_IN_NANO + "=" + minDurationInNano);
         }
     }
 

@@ -42,7 +42,7 @@ public class Tracer {
     }
 
     public void addEvent(TraceEvent e) {
-        if (enabled && e.duration >= tracerConfig.minDurationInMs) {
+        if (enabled && e.duration >= tracerConfig.minDurationInNano) {
             cb.add(e);
         }
     }
