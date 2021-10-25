@@ -14,7 +14,7 @@ java -javaagent:<tracer.jar>  \
 org.gz.examples.AsyncExamples 
 ```
 2. vizviwer output.json
-TODO add png
+![AsyncExample](https://github.com/zizhong/JavaVizTracer/blob/main/Examples/asyncExample.1.png?raw=true)
 
 #### Profile a request
 1. Add -javaagent and needed options to your java application command line.
@@ -27,4 +27,4 @@ curl localhost:11051/trace?cmd=disable
 3. vizviwer output.json
 
 ### Disclaimer
-This project is in alpha stage. Please report bugs to TODO. Your contribution is greatly welcomed!
+This project is in alpha stage. Please report bugs [here](https://github.com/zizhong/JavaVizTracer/issues). Your contribution is greatly welcomed!
