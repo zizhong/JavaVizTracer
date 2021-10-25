@@ -32,8 +32,16 @@ public class Agent implements ClassFileTransformer {
     @Override
     public byte[] transform(ClassLoader loader, String className, Class clazz,
                             java.security.ProtectionDomain domain, byte[] bytes) {
-        String classNameDir = className.replace('.', '/');
+        String classNameDir = className.replace('/', '.');
 
+        for (String include : Tracer.getInstance().getTracerConfig().allowClassList) {
+            if (include.length() == 0) {
+                continue;
+            }
+            if (className.startsWith(include) || classNameDir.startsWith(include)) {
+                return doClass(className, clazz, bytes);
+            }
+        }
         for (String exclude : Tracer.getInstance().getTracerConfig().denyClassList) {
             if (exclude.length() == 0) {
                 continue;
@@ -44,14 +52,6 @@ public class Agent implements ClassFileTransformer {
             }
         }
 
-        for (String include : Tracer.getInstance().getTracerConfig().allowClassList) {
-            if (include.length() == 0) {
-                continue;
-            }
-            if (className.startsWith(include) || classNameDir.startsWith(include)) {
-                return doClass(className, clazz, bytes);
-            }
-        }
         return bytes;
 
     }
@@ -99,10 +99,10 @@ public class Agent implements ClassFileTransformer {
             err.println("Agent.doMethod " + longMethodName);
         }
         method.addLocalVariable("_gz_viz_tracer_ts", CtClass.longType);
-        method.insertBefore("_gz_viz_tracer_ts = System.currentTimeMillis();");
+        method.insertBefore("_gz_viz_tracer_ts = System.nanoTime();");
         method.insertAfter("{\n" +
                 "    if (org.gz.viztracer.Tracer.getInstance().isEnabled()) {\n" +
-                "        long _gz_viz_tracer_dur = System.currentTimeMillis() - _gz_viz_tracer_ts;\n" +
+                "        long _gz_viz_tracer_dur = System.nanoTime() - _gz_viz_tracer_ts;\n" +
                 "        org.gz.viztracer.Tracer.getInstance().addEvent(new org.gz.viztracer.TraceEvent(_gz_viz_tracer_ts, _gz_viz_tracer_dur, \"" + longMethodName + "\"));\n" +
                 "    }\n" +
                 "}");

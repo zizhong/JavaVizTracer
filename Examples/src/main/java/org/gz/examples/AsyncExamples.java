@@ -4,6 +4,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class AsyncExamples {
+    public static void sleepFor1Ms() throws InterruptedException {
+        TimeUnit.MILLISECONDS.sleep(1);
+    }
+
     public static void main(String[] args) {
         System.out.println("App started");
         CompletableFuture<Void> f1 = CompletableFuture.runAsync(() -> {
@@ -24,7 +28,7 @@ public class AsyncExamples {
 
     private static int fib(int n) {
         try {
-            TimeUnit.MILLISECONDS.sleep(1);
+            AsyncExamples.sleepFor1Ms();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

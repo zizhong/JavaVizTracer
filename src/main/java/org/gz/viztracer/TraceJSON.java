@@ -70,8 +70,8 @@ class TraceEventJSON {
     TraceEventJSON(TraceEvent e) {
         pid = e.processId;
         tid = e.threadId;
-        ts = e.timestamp;
-        dur = e.duration;
+        ts = e.timestamp / 1000000.0;
+        dur = e.duration / 1000000.0;
         name = e.method;
     }
 }
@@ -97,7 +97,7 @@ class TraceJSON {
 
     TraceJSON(List<TraceEvent> events) {
         // TODO test if unsorted data can cause difference.
-        events.sort(Comparator.comparingLong(TraceEvent::sortByTimeStamp));
+        //events.sort(Comparator.comparingLong(TraceEvent::sortByTimeStamp));
 
 
         Set<Long> pids = new HashSet<>();
