@@ -9,19 +9,20 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
-public class VizTracer {
-    private static final Logger log = Logger.getLogger(VizTracer.class.getName());
-    private static VizTracer INSTANCE;
-    private final CircularBuffer<TraceEvent> cb;
-
+public class Tracer {
+    private static final Logger log = Logger.getLogger(Tracer.class.getName());
+    private static Tracer INSTANCE;
+    private final TracerConfig tracerConfig;
+    private CircularBuffer<TraceEvent> cb;
     // State Management
     private boolean enabled;
     private boolean saveInProgress;
     private boolean waitForEnable;
 
-    private VizTracer() {
-        cb = new CircularBuffer<>(1000000);
-        enabled = true;
+    private Tracer() {
+        tracerConfig = new TracerConfig();
+        cb = new CircularBuffer<>(tracerConfig.maxTraceEvents);
+        enabled = tracerConfig.enableOnStart;
         saveInProgress = false;
         waitForEnable = false;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -29,11 +30,11 @@ public class VizTracer {
         }));
     }
 
-    public static synchronized VizTracer getInstance() {
-        if (VizTracer.INSTANCE == null) {
-            VizTracer.INSTANCE = new VizTracer();
+    public static Tracer getInstance() {
+        if (Tracer.INSTANCE == null) {
+            Tracer.INSTANCE = new Tracer();
         }
-        return VizTracer.INSTANCE;
+        return Tracer.INSTANCE;
     }
 
     public boolean isEnabled() {
@@ -41,7 +42,7 @@ public class VizTracer {
     }
 
     public void addEvent(TraceEvent e) {
-        if (enabled) {
+        if (enabled && e.duration >= tracerConfig.minDurationInMs) {
             cb.add(e);
         }
     }
@@ -64,7 +65,7 @@ public class VizTracer {
                 try {
                     return save();
                 } catch (IOException e) {
-                    VizTracer.log.info("save exception {}" + e.toString());
+                    Tracer.log.info("save exception {}" + e.toString());
                 }
                 return false;
             }).thenAccept(r -> {
@@ -73,7 +74,7 @@ public class VizTracer {
                     System.out.println("Trace enabled");
                 }
             }).exceptionally(e -> {
-                VizTracer.log.info("supplyAsync exception {}" + e.toString());
+                Tracer.log.info("supplyAsync exception {}" + e.toString());
                 e.printStackTrace();
                 return null;
             }).join();
@@ -85,10 +86,12 @@ public class VizTracer {
     public boolean save() throws IOException {
         ObjectMapper jacksonMapper = new ObjectMapper();
         List<TraceEvent> l = cb.drain();
-        //ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-        //String jsonStr = ow.writeValueAsString(new TraceJSON(l));
-        jacksonMapper.writeValue(new File("C:\\Users\\grain\\workspaces\\JavaVizTracer\\output\\out.json"), new TraceJSON(l));
+        jacksonMapper.writeValue(new File(tracerConfig.outputFile), new TraceJSON(l));
+        System.out.println("Wrote " + l.size() + " trace events into " + tracerConfig.outputFile);
         return true;
     }
 
+    public TracerConfig getTracerConfig() {
+        return tracerConfig;
+    }
 }

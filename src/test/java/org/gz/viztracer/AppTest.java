@@ -28,17 +28,17 @@ public class AppTest {
         _gz_viz_tracer_sb.append(':');
         _gz_viz_tracer_sb.append(_gz_viz_tracer_method.getName());
         long dur = System.currentTimeMillis() - _gz_viz_tracer_ts;
-        org.gz.viztracer.VizTracer.getInstance().addEvent(
+        Tracer.getInstance().addEvent(
                 new org.gz.viztracer.TraceEvent(_gz_viz_tracer_ts, dur, _gz_viz_tracer_sb.toString()));
-        org.gz.viztracer.VizTracer.getInstance().addEvent(
+        Tracer.getInstance().addEvent(
                 new org.gz.viztracer.TraceEvent(_gz_viz_tracer_ts + 1, dur - 1, _gz_viz_tracer_sb.toString() + "1"));
     }
 
     @Test(expected = Test.None.class /* no exception expected */)
     public void assistCodeTest() throws JsonProcessingException {
-        VizTracer.getInstance().enable();
+        Tracer.getInstance().enable();
         AppTest.aSleepyFunction();
-        VizTracer.getInstance().disable();
+        Tracer.getInstance().disable();
     }
 
     @Test
@@ -57,16 +57,16 @@ public class AppTest {
 
         TraceClient client = retrofit.create(TraceClient.class);
 
-        VizTracer.getInstance().disable();
+        Tracer.getInstance().disable();
         CompletableFuture<String> response = client.get("1");
         String query = response.get();
         assert query.contains("1");
         TimeUnit.MILLISECONDS.sleep(10);
-        assert VizTracer.getInstance().isEnabled();
+        assert Tracer.getInstance().isEnabled();
         CompletableFuture<String> response2 = client.get("0");
         String query2 = response2.get();
         assert query2.contains("0");
         TimeUnit.MILLISECONDS.sleep(10);
-        assert !VizTracer.getInstance().isEnabled();
+        assert !Tracer.getInstance().isEnabled();
     }
 }

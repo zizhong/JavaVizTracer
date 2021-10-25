@@ -12,18 +12,7 @@ import static java.lang.System.out;
 
 public class Agent implements ClassFileTransformer {
 
-    /**
-     * classes to always not to instrument
-     */
-    private static final String[] DEFAULT_EXCLUDES = new String[]{"com/sun/", "sun/", "java/", "javax/", "org/slf4j"};
-
-    /**
-     * only this classes should instrument or leave empty to instrument all classes that not excluded
-     */
-    private static final String[] INCLUDES = new String[]{
-            "org/gz/examples"
-            // "org/bouncycastle/crypto/encodings/", "org/bouncycastle/jce/provider/JCERSACipher"
-    };
+    private static boolean verbose;
 
     public static void premain(String agentArgument, Instrumentation instrumentation) {
         try {
@@ -33,6 +22,7 @@ public class Agent implements ClassFileTransformer {
             return;
         }
         instrumentation.addTransformer(new Agent());
+        verbose = Tracer.getInstance().getTracerConfig().verbose;
     }
 
 
@@ -43,50 +33,54 @@ public class Agent implements ClassFileTransformer {
     public byte[] transform(ClassLoader loader, String className, Class clazz,
                             java.security.ProtectionDomain domain, byte[] bytes) {
         String classNameDir = className.replace('.', '/');
-        for (int i = 0; i < Agent.DEFAULT_EXCLUDES.length; i++) {
-            if (className.startsWith(Agent.DEFAULT_EXCLUDES[i]) || classNameDir.startsWith(Agent.DEFAULT_EXCLUDES[i])) {
+
+        for (String exclude : Tracer.getInstance().getTracerConfig().denyClassList) {
+            if (exclude.length() == 0) {
+                continue;
+            }
+            if (className.startsWith(exclude) || classNameDir.startsWith(exclude)) {
+
                 return bytes;
             }
         }
 
-        for (String include : Agent.INCLUDES) {
+        for (String include : Tracer.getInstance().getTracerConfig().allowClassList) {
+            if (include.length() == 0) {
+                continue;
+            }
             if (className.startsWith(include) || classNameDir.startsWith(include)) {
                 return doClass(className, clazz, bytes);
             }
         }
         return bytes;
 
-        //return doClass(className, clazz, bytes);
     }
 
     /**
      * instrument class with javasisst
      */
     private byte[] doClass(String name, Class clazz, byte[] b) {
-
+        if (verbose) {
+            err.println("Agent.doClass " + name);
+        }
         ClassPool pool = ClassPool.getDefault();
         CtClass cl = null;
 
         try {
             cl = pool.makeClass(new java.io.ByteArrayInputStream(b));
-
             if (cl.isInterface() == false) {
-
                 CtBehavior[] methods = cl.getDeclaredBehaviors();
-
                 for (int i = 0; i < methods.length; i++) {
                     if (methods[i].isEmpty() == false) {
                         doMethod(methods[i]);
                     }
                 }
-
                 b = cl.toBytecode();
             }
         } catch (Exception e) {
             e.printStackTrace();
             err.println("Could not instrument  " + name + ",  exception : " + e.getMessage());
         } finally {
-
             if (cl != null) {
                 cl.detach();
             }
@@ -101,11 +95,16 @@ public class Agent implements ClassFileTransformer {
      */
     private void doMethod(CtBehavior method) throws NotFoundException, CannotCompileException {
         String longMethodName = method.getDeclaringClass().getName() + "." + method.getName();
+        if (verbose) {
+            err.println("Agent.doMethod " + longMethodName);
+        }
         method.addLocalVariable("_gz_viz_tracer_ts", CtClass.longType);
         method.insertBefore("_gz_viz_tracer_ts = System.currentTimeMillis();");
         method.insertAfter("{\n" +
+                "    if (org.gz.viztracer.Tracer.getInstance().isEnabled()) {\n" +
                 "        long _gz_viz_tracer_dur = System.currentTimeMillis() - _gz_viz_tracer_ts;\n" +
-                "        org.gz.viztracer.VizTracer.getInstance().addEvent(new org.gz.viztracer.TraceEvent(_gz_viz_tracer_ts, _gz_viz_tracer_dur, \"" + longMethodName + "\"));\n" +
+                "        org.gz.viztracer.Tracer.getInstance().addEvent(new org.gz.viztracer.TraceEvent(_gz_viz_tracer_ts, _gz_viz_tracer_dur, \"" + longMethodName + "\"));\n" +
+                "    }\n" +
                 "}");
     }
 }

@@ -19,9 +19,9 @@ class TraceHandler implements HttpHandler {
         String query = t.getRequestURI().getRawQuery();
         System.out.println("Server receives query " + query);
         if (query.contains("enable") || query.contains("1")) {
-            VizTracer.getInstance().enable();
+            Tracer.getInstance().enable();
         } else {
-            VizTracer.getInstance().disable();
+            Tracer.getInstance().disable();
         }
 
         String response = query;
